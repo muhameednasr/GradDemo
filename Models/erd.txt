@@ -1,0 +1,29 @@
+﻿Role (RoleID PK, RoleName)
+   │
+   └──< User (UserID PK, FullName, Email, PasswordHash, Phone, RoleID FK)
+            │
+            ├──< Order (OrderID PK, CustomerID FK, CashierID FK, OrderDate, Status, TotalAmount)
+            │        │
+            │        ├──< OrderItem (OrderItemID PK, OrderID FK, ItemID FK, Quantity, Subtotal)
+            │        │
+            │        ├───> Bill (BillID PK, OrderID FK, CashierId FK, TotalAmount, PaymentMethod, BillDate)
+            │        ├───> ReturnedOrder (ReturnID PK, OrderID FK, ItemID FK, Quantity, Reason, ReturnDate)
+            │        └───> CancelledOrder (CancelID PK, OrderID FK, CancelledBy FK, Reason, CancelledDate)
+            │
+            └──< Item (ItemID PK, ItemName, Category, Price, IsAvailable)
+
+//---------------------------------------------------------------------------------------------//
+
+| Relationship           | Type | Description                               |
+| ---------------------- | ---- | ----------------------------------------- |
+| Role → User            | 1–M  | Each user has one role                    |
+| User → Order           | 1–M  | A customer can place many orders          |
+| User (Cashier) → Order | 1–M  | A cashier can process many orders         |
+| Order → OrderItem      | 1–M  | Each order can have multiple items        |
+| Item → OrderItem       | 1–M  | Each item can be in multiple orders       |
+| Order → Bill           | 1–1  | Each order generates one bill             |
+| Order → ReturnedOrder  | 1–M  | An order can have multiple returned items |
+| Order → CancelledOrder | 1–1  | An order can be cancelled once            |
+
+
+//---------------------------------------------------------------------------------------------//
