@@ -1,6 +1,7 @@
 ﻿using GradDemo.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace GradDemo.Controllers
 {
@@ -17,7 +18,7 @@ namespace GradDemo.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<Order> orders = context.Orders.ToList();
+            List<Order> orders = context.Orders.Include(u => u.Customer).Include(c=>c.Cashier).ToList();
             return Ok(orders);
         }
 
@@ -27,6 +28,13 @@ namespace GradDemo.Controllers
         {
             Order order = context.Orders.FirstOrDefault(o=>o.Id==id);
             return Ok(order);
+        }
+        [HttpPost]
+        public IActionResult PlaceOrder(Order order)
+        {
+            context.Orders.Add(order);
+            context.SaveChanges();
+            return RedirectToAction("GetById",order.Id);
         }
 
        
