@@ -18,7 +18,7 @@ namespace GradDemo.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<Order> orders = context.Orders.Include(u => u.Customer).Include(c=>c.Cashier).ToList();
+            List<Order> orders = context.Orders.Include(u => u.Customer).ThenInclude(c=>c.Role).Include(c=>c.Cashier).ThenInclude(c=>c.Role).ToList();
             return Ok(orders);
         }
 

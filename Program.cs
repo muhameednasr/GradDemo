@@ -21,6 +21,7 @@ namespace GradDemo
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
+            builder.Services.AddCors();
 
             var app = builder.Build();
 
