@@ -18,7 +18,25 @@ namespace GradDemo.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<Order> orders = context.Orders.Include(u => u.Customer).ThenInclude(c=>c.Role).Include(c=>c.Cashier).ThenInclude(c=>c.Role).ToList();
+            var orders = context.Orders
+                 .Select(o => new
+                 {
+                     o.Id,
+                     o.OrderDate,
+                     CustomerName = o.Customer.Name,
+                     CashierName = o.Cashier.Name,
+                     o.Status,
+                     o.Total,
+                     Items = o.OrderItems.Select(oi => new
+                     {
+                         oi.Item.Name,
+                         oi.Quantity,
+                         oi.Item.Price
+                     }).ToList()
+                 })
+                     .ToList();
+
+
             return Ok(orders);
         }
 
@@ -26,7 +44,7 @@ namespace GradDemo.Controllers
         [Route("{id:int}")] //api/order/1
         public IActionResult GetById(int id)
         {
-            Order order = context.Orders.FirstOrDefault(o=>o.Id==id);
+            Order order = context.Orders.FirstOrDefault(o => o.Id == id);
             return Ok(order);
         }
         [HttpPost]
@@ -34,9 +52,9 @@ namespace GradDemo.Controllers
         {
             context.Orders.Add(order);
             context.SaveChanges();
-            return RedirectToAction("GetById",order.Id);
+            return CreatedAtAction("GetById", new { id = order.Id });
         }
 
-       
+
     }
 }
