@@ -45,7 +45,7 @@ namespace GradDemo.Controllers
 
             return Ok(orders);
         }
-
+        //api/order/{id}  ------> dont start with slash '/' ya zmely  ;)
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
@@ -89,6 +89,7 @@ namespace GradDemo.Controllers
             return Ok(order);
         }
 
+        //api/order/{id}  ------> dont start with slash '/' ya zmely  ;)
         [HttpPut("{id}")]
         public IActionResult UpdateOrder(int id, Order order)
         {
