@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GradDemo.Migrations
 {
     /// <inheritdoc />
-    public partial class initialCreate : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -42,6 +42,19 @@ namespace GradDemo.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Tables",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Area = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tables", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -74,11 +87,26 @@ namespace GradDemo.Migrations
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Total = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     CustomerId = table.Column<int>(type: "int", nullable: false),
-                    CashierId = table.Column<int>(type: "int", nullable: false)
+                    CashierId = table.Column<int>(type: "int", nullable: false),
+                    CaptainId = table.Column<int>(type: "int", nullable: false),
+                    WaiterId = table.Column<int>(type: "int", nullable: false),
+                    TableId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Orders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Orders_Tables_TableId",
+                        column: x => x.TableId,
+                        principalTable: "Tables",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Orders_Users_CaptainId",
+                        column: x => x.CaptainId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Orders_Users_CashierId",
                         column: x => x.CashierId,
@@ -88,6 +116,12 @@ namespace GradDemo.Migrations
                     table.ForeignKey(
                         name: "FK_Orders_Users_CustomerId",
                         column: x => x.CustomerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Orders_Users_WaiterId",
+                        column: x => x.WaiterId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -237,6 +271,11 @@ namespace GradDemo.Migrations
                 column: "OrderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Orders_CaptainId",
+                table: "Orders",
+                column: "CaptainId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Orders_CashierId",
                 table: "Orders",
                 column: "CashierId");
@@ -245,6 +284,16 @@ namespace GradDemo.Migrations
                 name: "IX_Orders_CustomerId",
                 table: "Orders",
                 column: "CustomerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_TableId",
+                table: "Orders",
+                column: "TableId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_WaiterId",
+                table: "Orders",
+                column: "WaiterId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReturnedOrders_ItemId",
@@ -282,6 +331,9 @@ namespace GradDemo.Migrations
 
             migrationBuilder.DropTable(
                 name: "Orders");
+
+            migrationBuilder.DropTable(
+                name: "Tables");
 
             migrationBuilder.DropTable(
                 name: "Users");

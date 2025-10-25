@@ -21,6 +21,18 @@ namespace GradDemo.Models
         public int CashierId { get; set; }
         public virtual User? Cashier { get; set; }
 
+        [ForeignKey(nameof(Captain))]
+        public int CaptainId { get; set; }
+        public virtual User? Captain { get; set; }
+
+        [ForeignKey(nameof(Waiter))]
+        public int WaiterId { get; set; }
+        public virtual User? Waiter { get; set; }
+
+        [ForeignKey(nameof(Table))]
+        public int TableId { get; set; }
+        public virtual Table? Table { get; set; }
+
         public virtual ICollection<OrderItem> OrderItems { get; set; }
 
         public void CalculateTotal()
