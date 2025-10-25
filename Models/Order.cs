@@ -1,4 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Xml.Serialization;
 
 namespace GradDemo.Models
 {
@@ -12,12 +15,17 @@ namespace GradDemo.Models
         //refers to customer who made order
         [ForeignKey(nameof(Customer))]
         public int CustomerId { get; set; }
-        public virtual User Customer { get; set; }
+        public virtual User? Customer { get; set; }
         // refers to cashier who submitted order
         [ForeignKey(nameof(Cashier))]
         public int CashierId { get; set; }
-        public virtual User Cashier { get; set; }
+        public virtual User? Cashier { get; set; }
 
         public virtual ICollection<OrderItem> OrderItems { get; set; }
+
+        public void CalculateTotal()
+        {
+            this.Total = this.OrderItems.Sum(oi => oi.Quantity * oi.Item.Price) ;
+        }
     }
 }

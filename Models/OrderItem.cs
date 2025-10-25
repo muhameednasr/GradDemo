@@ -9,10 +9,10 @@ namespace GradDemo.Models
 
         [ForeignKey(nameof(Order))]
         public int OrderId { get; set; }
-        public virtual Order Order { get; set; }
+        public virtual Order? Order { get; set; }
 
         [ForeignKey(nameof(Item))]
         public int ItemId { get; set; }
-        public virtual Item Item { get; set; }
+        public virtual Item? Item { get; set; }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using GradDemo.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace GradDemo.Controllers
 {
@@ -9,7 +11,8 @@ namespace GradDemo.Controllers
     [ApiController]
     public class OrderController : ControllerBase
     {
-        ApplicationDbContext context;
+        private readonly ApplicationDbContext context;
+
         public OrderController(ApplicationDbContext _context)
         {
             context = _context;
@@ -19,42 +22,139 @@ namespace GradDemo.Controllers
         public IActionResult GetAll()
         {
             var orders = context.Orders
-                 .Select(o => new
-                 {
-                     o.Id,
-                     o.OrderDate,
-                     CustomerName = o.Customer.Name,
-                     CashierName = o.Cashier.Name,
-                     o.Status,
-                     o.Total,
-                     Items = o.OrderItems.Select(oi => new
-                     {
-                         oi.Item.Name,
-                         oi.Quantity,
-                         oi.Item.Price
-                     }).ToList()
-                 })
-                     .ToList();
-
+                .Include(o => o.Customer)
+                .Include(o => o.Cashier)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Item)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.OrderDate,
+                    CustomerName = o.Customer.Name,
+                    CashierName = o.Cashier.Name,
+                    o.Status,
+                    o.Total,
+                    Items = o.OrderItems.Select(oi => new
+                    {
+                        oi.Item.Name,
+                        oi.Quantity,
+                        oi.Item.Price
+                    }).ToList()
+                })
+                .ToList();
 
             return Ok(orders);
         }
 
-        [HttpGet]
-        [Route("{id:int}")] //api/order/1
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
-            Order order = context.Orders.FirstOrDefault(o => o.Id == id);
+            var order = context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.Cashier)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Item)
+                .FirstOrDefault(o => o.Id == id);
+
+            if (order == null)
+                return NotFound();
+
             return Ok(order);
         }
+
         [HttpPost]
         public IActionResult PlaceOrder(Order order)
         {
+            
+            if (!context.Users.Any(u => u.Id == order.CustomerId) ||
+                !context.Users.Any(u => u.Id == order.CashierId))
+                return BadRequest("Invalid CustomerId or CashierId");
+
+            foreach (var oi in order.OrderItems)
+            {
+                var item = context.Items.Find(oi.ItemId);
+                if (item == null)
+                    return BadRequest($"Item with ID {oi.ItemId} not found.");
+
+                oi.Item = item;  
+            }
+
+            order.CalculateTotal();
+            order.OrderDate = DateTime.Now;
+
             context.Orders.Add(order);
             context.SaveChanges();
-            return CreatedAtAction("GetById", new { id = order.Id });
+
+            //return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+            return Ok(order);
         }
 
+        [HttpPut("{id}")]
+        public IActionResult UpdateOrder(int id, Order order)
+        {
+            var oldOrder = context.Orders
+                .Include(o => o.OrderItems)  
+                .FirstOrDefault(o => o.Id == id);
 
+            if (oldOrder == null)
+                return NotFound($"Order with ID {id} not found");
+
+            if (!context.Users.Any(u => u.Id == order.CustomerId) ||
+                !context.Users.Any(u => u.Id == order.CashierId))
+                return BadRequest("Invalid CustomerId or CashierId");
+
+          
+            foreach (var oi in order.OrderItems)
+            {
+                var item = context.Items.Find(oi.ItemId);
+                if (item == null)
+                    return BadRequest($"Item with ID {oi.ItemId} not found.");
+                oi.Item = item;
+            }
+
+            
+            oldOrder.Status = order.Status;
+            oldOrder.CustomerId = order.CustomerId;
+            oldOrder.CashierId = order.CashierId;
+            
+
+           
+            context.OrderItems.RemoveRange(oldOrder.OrderItems);
+
+           
+            oldOrder.OrderItems = order.OrderItems;
+
+           
+            oldOrder.CalculateTotal();
+
+            context.SaveChanges();
+
+            return Ok(oldOrder);
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult DeleteOrder(int id)
+        {
+            var order = context.Orders.Find(id);
+
+            if (order == null)
+                return NotFound($"Order with ID {id} not found");
+
+            context.Orders.Remove(order);
+            context.SaveChanges();
+
+            return NoContent(); // 204 
+        }
     }
 }
+/*  Test Object
+ {
+  "status": "test",
+  "customerId": 1,
+  "cashierId": 2,
+  "orderItems": [
+    { "quantity": 4, "itemId": 1 },
+    { "quantity": 5, "itemId": 2 }
+  ]
+}
+*/
