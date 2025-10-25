@@ -1,6 +1,7 @@
 
 using GradDemo.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GradDemo
 {
@@ -21,7 +22,15 @@ namespace GradDemo
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
-            builder.Services.AddCors();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAngular",
+                    policy => policy
+                        .WithOrigins("http://localhost:4200")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+            });
+
             builder.Services.AddControllers().AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -29,6 +38,8 @@ namespace GradDemo
 
 
             var app = builder.Build();
+            app.UseCors("AllowAngular");
+
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

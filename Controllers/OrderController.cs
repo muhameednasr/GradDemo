@@ -26,14 +26,22 @@ namespace GradDemo.Controllers
                 .Include(o => o.Cashier)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
+                .Include(o=>o.Captain)
+                .Include(o=>o.Waiter)
+                .Include(o=>o.Table)
                 .Select(o => new
                 {
                     o.Id,
                     o.OrderDate,
                     CustomerName = o.Customer.Name,
                     CashierName = o.Cashier.Name,
+                    WaiterName = o.Waiter.Name,
+                    CaptainName = o.Captain.Name,
+                    o.TableId,
+                    o.Table.Area,
                     o.Status,
                     o.Total,
+
                     Items = o.OrderItems.Select(oi => new
                     {
                         oi.Item.Name,
@@ -54,6 +62,9 @@ namespace GradDemo.Controllers
                 .Include(o => o.Cashier)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
+                .Include(o => o.Captain)
+                .Include(o => o.Waiter)
+                .Include(o => o.Table)
                 .FirstOrDefault(o => o.Id == id);
 
             if (order == null)
@@ -67,8 +78,10 @@ namespace GradDemo.Controllers
         {
             
             if (!context.Users.Any(u => u.Id == order.CustomerId) ||
-                !context.Users.Any(u => u.Id == order.CashierId))
-                return BadRequest("Invalid CustomerId or CashierId");
+                !context.Users.Any(u => u.Id == order.CashierId)||
+                !context.Users.Any(u => u.Id == order.CaptainId)||
+                !context.Users.Any(u => u.Id == order.WaiterId))
+                return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
 
             foreach (var oi in order.OrderItems)
             {
@@ -101,10 +114,12 @@ namespace GradDemo.Controllers
                 return NotFound($"Order with ID {id} not found");
 
             if (!context.Users.Any(u => u.Id == order.CustomerId) ||
-                !context.Users.Any(u => u.Id == order.CashierId))
-                return BadRequest("Invalid CustomerId or CashierId");
+             !context.Users.Any(u => u.Id == order.CashierId) ||
+             !context.Users.Any(u => u.Id == order.CaptainId) ||
+             !context.Users.Any(u => u.Id == order.WaiterId))
+                return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
 
-          
+
             foreach (var oi in order.OrderItems)
             {
                 var item = context.Items.Find(oi.ItemId);
@@ -117,6 +132,9 @@ namespace GradDemo.Controllers
             oldOrder.Status = order.Status;
             oldOrder.CustomerId = order.CustomerId;
             oldOrder.CashierId = order.CashierId;
+            oldOrder.CaptainId = order.CaptainId;
+            oldOrder.WaiterId = order.WaiterId;
+            oldOrder.TableId = order.TableId;
             
 
            

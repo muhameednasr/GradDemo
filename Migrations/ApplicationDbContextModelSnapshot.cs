@@ -123,6 +123,9 @@ namespace GradDemo.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CaptainId")
+                        .HasColumnType("int");
+
                     b.Property<int>("CashierId")
                         .HasColumnType("int");
 
@@ -136,14 +139,26 @@ namespace GradDemo.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("Total")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("WaiterId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CaptainId");
 
                     b.HasIndex("CashierId");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("TableId");
+
+                    b.HasIndex("WaiterId");
 
                     b.ToTable("Orders");
                 });
@@ -224,6 +239,23 @@ namespace GradDemo.Migrations
                     b.ToTable("Roles");
                 });
 
+            modelBuilder.Entity("GradDemo.Models.Table", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Area")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tables");
+                });
+
             modelBuilder.Entity("GradDemo.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -298,6 +330,12 @@ namespace GradDemo.Migrations
 
             modelBuilder.Entity("GradDemo.Models.Order", b =>
                 {
+                    b.HasOne("GradDemo.Models.User", "Captain")
+                        .WithMany()
+                        .HasForeignKey("CaptainId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("GradDemo.Models.User", "Cashier")
                         .WithMany()
                         .HasForeignKey("CashierId")
@@ -310,9 +348,27 @@ namespace GradDemo.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("GradDemo.Models.Table", "Table")
+                        .WithMany()
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GradDemo.Models.User", "Waiter")
+                        .WithMany()
+                        .HasForeignKey("WaiterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Captain");
+
                     b.Navigation("Cashier");
 
                     b.Navigation("Customer");
+
+                    b.Navigation("Table");
+
+                    b.Navigation("Waiter");
                 });
 
             modelBuilder.Entity("GradDemo.Models.OrderItem", b =>

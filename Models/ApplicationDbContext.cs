@@ -16,6 +16,7 @@ namespace GradDemo.Models
         public virtual DbSet<OrderItem> OrderItems { get; set; }
         public virtual DbSet<ReturnedOrder> ReturnedOrders { get; set; }
         public virtual DbSet<CancelledOrder> CancelledOrders { get; set; }
+        public virtual DbSet<Table> Tables { get; set; }
         public virtual DbSet<Bill> Bills { get; set; }
 
 
@@ -35,6 +36,23 @@ namespace GradDemo.Models
                 .HasOne(o => o.Cashier)
                 .WithMany() 
                 .HasForeignKey(o => o.CashierId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Waiter)
+                .WithMany() 
+                .HasForeignKey(o => o.WaiterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Captain)
+                .WithMany() 
+                .HasForeignKey(o => o.CaptainId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Table)
+                .WithMany() 
+                .HasForeignKey(o => o.TableId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
 
