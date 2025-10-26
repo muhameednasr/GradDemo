@@ -26,9 +26,9 @@ namespace GradDemo.Controllers
                 .Include(o => o.Cashier)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
-                .Include(o=>o.Captain)
-                .Include(o=>o.Waiter)
-                .Include(o=>o.Table)
+                .Include(o => o.Captain)
+                .Include(o => o.Waiter)
+                .Include(o => o.Table)
                 .Select(o => new
                 {
                     o.Id,
@@ -50,6 +50,7 @@ namespace GradDemo.Controllers
                     }).ToList()
                 })
                 .ToList();
+
 
             return Ok(orders);
         }
@@ -91,6 +92,7 @@ namespace GradDemo.Controllers
 
                 oi.Item = item;  
             }
+            
 
             order.CalculateTotal();
             order.OrderDate = DateTime.Now;
@@ -118,6 +120,27 @@ namespace GradDemo.Controllers
              !context.Users.Any(u => u.Id == order.CaptainId) ||
              !context.Users.Any(u => u.Id == order.WaiterId))
                 return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
+
+            Order newOrder = new Order();
+
+            foreach(var oi in order.OrderItems)
+            {
+                if (oi.IsPayed == true)
+                {
+                    newOrder.OrderItems.Add(oi);
+                }
+            }
+            newOrder.Status = order.Status;
+            newOrder.CustomerId = order.CustomerId;
+            newOrder.CashierId = order.CashierId;
+            newOrder.CaptainId = order.CaptainId;
+            newOrder.WaiterId = order.WaiterId;
+            newOrder.TableId = order.TableId;
+            newOrder.CalculateTotal();
+
+            Bill newBill = new Bill();
+            newBill.OrderId = newOrder.Id;
+            newBill.CashierId = newOrder.CashierId;
 
 
             foreach (var oi in order.OrderItems)

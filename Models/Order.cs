@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection.Metadata.Ecma335;
 using System.Xml.Serialization;
 
 namespace GradDemo.Models
@@ -32,6 +33,7 @@ namespace GradDemo.Models
         [ForeignKey(nameof(Table))]
         public int TableId { get; set; }
         public virtual Table? Table { get; set; }
+
 
         public virtual ICollection<OrderItem> OrderItems { get; set; }
 

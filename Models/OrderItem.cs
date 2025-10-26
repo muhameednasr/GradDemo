@@ -11,6 +11,9 @@ namespace GradDemo.Models
         public int OrderId { get; set; }
         public virtual Order? Order { get; set; }
 
+        public bool IsPayed { get; set; } = false;
+
+
         [ForeignKey(nameof(Item))]
         public int ItemId { get; set; }
         public virtual Item? Item { get; set; }
