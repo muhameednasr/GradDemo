@@ -26,6 +26,8 @@ namespace GradDemo.Controllers
                 .Include(o => o.Cashier)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Size)
                 .Include(o => o.Captain)
                 .Include(o => o.Waiter)
                 .Include(o => o.Table)
@@ -46,7 +48,8 @@ namespace GradDemo.Controllers
                     {
                         oi.Item.Name,
                         oi.Quantity,
-                        oi.Item.Price
+                        oi.Item.Price,
+                        oi.Size.Code
                     }).ToList()
                 })
                 .ToList();
@@ -59,14 +62,36 @@ namespace GradDemo.Controllers
         public IActionResult GetById(int id)
         {
             var order = context.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.Cashier)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Item)
-                .Include(o => o.Captain)
-                .Include(o => o.Waiter)
-                .Include(o => o.Table)
-                .FirstOrDefault(o => o.Id == id);
+                     .Include(o => o.Customer)
+                     .Include(o => o.Cashier)
+                     .Include(o => o.OrderItems)
+                         .ThenInclude(oi => oi.Item)
+                     .Include(o => o.OrderItems)
+                         .ThenInclude(oi => oi.Size)
+                     .Include(o => o.Captain)
+                     .Include(o => o.Waiter)
+                     .Include(o => o.Table)
+                     .Where(o => o.Id == id)
+                     .Select(o => new
+                     {
+                         o.Id,
+                         o.OrderDate,
+                         CustomerName = o.Customer.Name,
+                         CashierName = o.Cashier.Name,
+                         WaiterName = o.Waiter.Name,
+                         CaptainName = o.Captain.Name,
+                         o.Table.Area,
+                         o.Status,
+                         o.Total,
+                         Items = o.OrderItems.Select(oi => new
+                         {
+                             ItemName = oi.Item.Name,
+                             oi.Quantity,
+                             oi.Item.Price,
+                             SizeCode = oi.Size.Code
+                         })
+                     })
+                    .FirstOrDefault();
 
             if (order == null)
                 return NotFound();
@@ -74,13 +99,60 @@ namespace GradDemo.Controllers
             return Ok(order);
         }
 
+        // WATCHOUT ITS PAGINATION :")
+        [HttpGet("today")]
+        public IActionResult GetTodayOrders(int pageNumber = 1, int pageSize = 10)
+        {
+            var today = DateTime.Today;
+            var startOfDay = today;
+            var endOfDay = today.AddDays(1);
+
+            var query = context.Orders
+                .AsNoTracking()
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Item)
+                .Where(o => o.OrderDate >= startOfDay && o.OrderDate < endOfDay);
+
+            var totalCount = query.Count();
+
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            if (pageNumber > totalPages && totalPages > 0)
+                return BadRequest($"Page number is more than total pages ({totalPages}).");
+
+            var orders = query
+                .OrderByDescending(o => o.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var totalRevenue = query.Sum(o => (decimal?)o.Total) ?? 0;
+            var paidOrdersCount = query.Count(o => o.Status == "Paid");
+            var unPaidOrdersCount = query.Count(o => o.Status != "Paid");
+
+            var result = new
+            {
+                CurrentPage = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalOrders = totalCount,
+                TotalRevenue = totalRevenue,
+                PaidOrders = paidOrdersCount,
+                UnPaidOrders = unPaidOrdersCount,
+                Orders = orders
+            };
+
+            return Ok(result);
+        }
+
+
         [HttpPost]
         public IActionResult PlaceOrder(Order order)
         {
-            
+
             if (!context.Users.Any(u => u.Id == order.CustomerId) ||
-                !context.Users.Any(u => u.Id == order.CashierId)||
-                !context.Users.Any(u => u.Id == order.CaptainId)||
+                !context.Users.Any(u => u.Id == order.CashierId) ||
+                !context.Users.Any(u => u.Id == order.CaptainId) ||
                 !context.Users.Any(u => u.Id == order.WaiterId))
                 return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
 
@@ -90,9 +162,9 @@ namespace GradDemo.Controllers
                 if (item == null)
                     return BadRequest($"Item with ID {oi.ItemId} not found.");
 
-                oi.Item = item;  
+                oi.Item = item;
             }
-            
+
 
             order.CalculateTotal();
             order.OrderDate = DateTime.Now;
@@ -108,81 +180,116 @@ namespace GradDemo.Controllers
         [HttpPut("{id}")]
         public IActionResult UpdateOrder(int id, Order order)
         {
-            var oldOrder = context.Orders
-                .Include(o => o.OrderItems)  
-                .FirstOrDefault(o => o.Id == id);
 
-            if (oldOrder == null)
-                return NotFound($"Order with ID {id} not found");
+            using var transaction = context.Database.BeginTransaction();
 
-            if (!context.Users.Any(u => u.Id == order.CustomerId) ||
-             !context.Users.Any(u => u.Id == order.CashierId) ||
-             !context.Users.Any(u => u.Id == order.CaptainId) ||
-             !context.Users.Any(u => u.Id == order.WaiterId))
-                return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
-
-            Order newOrder = new Order();
-
-            foreach(var oi in order.OrderItems)
+            try
             {
-                if (oi.IsPayed == true)
+
+                var oldOrder = context.Orders
+                             .Include(o => o.OrderItems)
+                             .FirstOrDefault(o => o.Id == id);
+
+                if (oldOrder == null)
+                    return NotFound($"Order with ID {id} not found");
+
+                if (!context.Users.Any(u => u.Id == order.CustomerId) ||
+                 !context.Users.Any(u => u.Id == order.CashierId) ||
+                 !context.Users.Any(u => u.Id == order.CaptainId) ||
+                 !context.Users.Any(u => u.Id == order.WaiterId))
+                    return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
+                //here if we want to pay item or more from order seperatly
+                Order newOrder = new Order() { OrderItems = new List<OrderItem>() };
+
+                foreach (var oi in order.OrderItems.Where(x => x.IsPayed))
                 {
-                    newOrder.OrderItems.Add(oi);
+                    var paidItem = new OrderItem
+                    {
+                        ItemId = oi.ItemId,
+                        Quantity = oi.Quantity,
+                        SizeId = oi.SizeId,
+                        IsPayed = true
+                    };
+                    newOrder.OrderItems.Add(paidItem);
                 }
+                newOrder.Status = order.Status;
+                newOrder.CustomerId = order.CustomerId;
+                newOrder.CashierId = order.CashierId;
+                newOrder.CaptainId = order.CaptainId;
+                newOrder.WaiterId = order.WaiterId;
+                newOrder.TableId = order.TableId;
+                newOrder.CalculateTotal();
+
+                context.Orders.Add(newOrder);
+                context.SaveChanges();
+
+                Bill newBill = new Bill();
+                newBill.OrderId = newOrder.Id;
+                newBill.CashierId = newOrder.CashierId;
+
+                context.Bills.Add(newBill);
+                context.SaveChanges();
+
+
+                //foreach (var oi in order.OrderItems)
+                //{
+                //    var item = context.Items.Find(oi.ItemId);
+                //    if (item == null)
+                //        return BadRequest($"Item with ID {oi.ItemId} not found.");
+                //    oi.Item = item;
+                //}
+                oldOrder.OrderItems = order.OrderItems
+                                      .Where(x => !x.IsPayed)
+                                      .Select(x => new OrderItem
+                                      {
+                                          ItemId = x.ItemId,
+                                          Quantity = x.Quantity,
+                                          SizeId = x.SizeId,
+                                          IsPayed = false
+                                      }).ToList();
+
+                oldOrder.CalculateTotal();
+
+
+                oldOrder.Status = order.Status;
+                oldOrder.CustomerId = order.CustomerId;
+                oldOrder.CashierId = order.CashierId;
+                oldOrder.CaptainId = order.CaptainId;
+                oldOrder.WaiterId = order.WaiterId;
+                oldOrder.TableId = order.TableId;
+
+
+                context.SaveChanges();
+                transaction.Commit();
+
+                return Ok(oldOrder);
             }
-            newOrder.Status = order.Status;
-            newOrder.CustomerId = order.CustomerId;
-            newOrder.CashierId = order.CashierId;
-            newOrder.CaptainId = order.CaptainId;
-            newOrder.WaiterId = order.WaiterId;
-            newOrder.TableId = order.TableId;
-            newOrder.CalculateTotal();
-
-            Bill newBill = new Bill();
-            newBill.OrderId = newOrder.Id;
-            newBill.CashierId = newOrder.CashierId;
-
-
-            foreach (var oi in order.OrderItems)
+            catch (Exception ex)
             {
-                var item = context.Items.Find(oi.ItemId);
-                if (item == null)
-                    return BadRequest($"Item with ID {oi.ItemId} not found.");
-                oi.Item = item;
+                transaction.Rollback();
+                return StatusCode(500, $"Error: {ex.Message}");
             }
 
-            
-            oldOrder.Status = order.Status;
-            oldOrder.CustomerId = order.CustomerId;
-            oldOrder.CashierId = order.CashierId;
-            oldOrder.CaptainId = order.CaptainId;
-            oldOrder.WaiterId = order.WaiterId;
-            oldOrder.TableId = order.TableId;
-            
 
-           
-            context.OrderItems.RemoveRange(oldOrder.OrderItems);
-
-           
-            oldOrder.OrderItems = order.OrderItems;
-
-           
-            oldOrder.CalculateTotal();
-
-            context.SaveChanges();
-
-            return Ok(oldOrder);
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteOrder(int id)
+        public IActionResult CancelOrder(int id,string reason)
         {
             var order = context.Orders.Find(id);
 
             if (order == null)
                 return NotFound($"Order with ID {id} not found");
 
-            context.Orders.Remove(order);
+            CancelledOrder cancelledOrder = new CancelledOrder();
+            cancelledOrder.OrderId = order.Id;
+            cancelledOrder.CancelledById = order.CashierId;
+            cancelledOrder.CancelledDate= DateTime.Now;
+            cancelledOrder.Reason=reason;
+            context.CancelledOrders.Add(cancelledOrder);
+            //updating cancelled order status
+            order.Status = "Cancelled";
+            context.Orders.Update(order);
             context.SaveChanges();
 
             return NoContent(); // 204 

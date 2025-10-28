@@ -13,6 +13,9 @@ namespace GradDemo.Models
 
         public bool IsPayed { get; set; } = false;
 
+        [ForeignKey(nameof(Size))]
+        public int SizeId { get; set; } 
+        public virtual Size? Size { get; set; }
 
         [ForeignKey(nameof(Item))]
         public int ItemId { get; set; }
