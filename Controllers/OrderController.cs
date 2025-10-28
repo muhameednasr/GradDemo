@@ -214,7 +214,7 @@ namespace GradDemo.Controllers
                 context.Orders.Add(order);
                 context.SaveChanges();
 
-                return Ok(order);
+                return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
             }
             catch (Exception ex)
             {
@@ -325,8 +325,11 @@ namespace GradDemo.Controllers
         }
 
         [HttpDelete("{id}")]
-        public IActionResult CancelOrder(int id, string reason)
+        public IActionResult CancelOrder(int id,[FromQuery]  string reason)
         {
+            if (string.IsNullOrWhiteSpace(reason))
+                return BadRequest("Cancellation reason is required");
+
             var order = context.Orders.Find(id);
 
             if (order == null)
@@ -341,7 +344,6 @@ namespace GradDemo.Controllers
 
             //updating cancelled order status
             order.Status = "Cancelled";
-            context.Orders.Update(order);
             context.SaveChanges();
 
             return NoContent(); // 204 
