@@ -57,7 +57,7 @@ namespace GradDemo.Controllers
 
             return Ok(orders);
         }
-        //api/order/{id}  ------> dont start with slash '/' ya zmely  ;)
+
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
@@ -99,7 +99,6 @@ namespace GradDemo.Controllers
             return Ok(order);
         }
 
-        // WATCHOUT ITS PAGINATION :")
         [HttpGet("today")]
         public IActionResult GetTodayOrders(int pageNumber = 1, int pageSize = 10)
         {
@@ -149,34 +148,80 @@ namespace GradDemo.Controllers
         [HttpPost]
         public IActionResult PlaceOrder(Order order)
         {
-
-            if (!context.Users.Any(u => u.Id == order.CustomerId) ||
-                !context.Users.Any(u => u.Id == order.CashierId) ||
-                !context.Users.Any(u => u.Id == order.CaptainId) ||
-                !context.Users.Any(u => u.Id == order.WaiterId))
-                return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
-
-            foreach (var oi in order.OrderItems)
+            try
             {
-                var item = context.Items.Find(oi.ItemId);
-                if (item == null)
-                    return BadRequest($"Item with ID {oi.ItemId} not found.");
+                
+                if (order == null)
+                {
+                    return BadRequest("Order cannot be null");
+                }
 
-                oi.Item = item;
+                
+                if (order.OrderItems == null)
+                {
+                    order.OrderItems = new List<OrderItem>();
+                }
+
+                if (!order.OrderItems.Any())
+                {
+                    return BadRequest("Order must contain at least one item");
+                }
+
+                
+                if (!context.Users.Any(u => u.Id == order.CustomerId) ||
+                    !context.Users.Any(u => u.Id == order.CashierId) ||
+                    !context.Users.Any(u => u.Id == order.CaptainId) ||
+                    !context.Users.Any(u => u.Id == order.WaiterId))
+                {
+                    return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
+                }
+
+                // Validate and load items with their sizes
+                foreach (var oi in order.OrderItems)
+                {
+                    // Validate SizeId
+                    if (oi.SizeId <= 0)
+                    {
+                        return BadRequest($"Invalid SizeId for item {oi.ItemId}");
+                    }
+
+                    // Load the item with ItemSizes
+                    var item = context.Items
+                        .Include(i => i.ItemSizes)
+                        .FirstOrDefault(i => i.Id == oi.ItemId);
+
+                    if (item == null)
+                    {
+                        return BadRequest($"Item with ID {oi.ItemId} not found.");
+                    }
+
+                    
+                    var itemSize = item.ItemSizes.FirstOrDefault(its => its.SizeId == oi.SizeId);
+                    if (itemSize == null)
+                    {
+                        return BadRequest($"Size with ID {oi.SizeId} not available for item {item.Name}");
+                    }
+
+                    // Attach the item to orderItem
+                    oi.Item = item;
+                }
+
+                
+                order.CalculateTotal();
+                order.OrderDate = DateTime.Now;
+
+
+                context.Orders.Add(order);
+                context.SaveChanges();
+
+                return Ok(order);
             }
-
-
-            order.CalculateTotal();
-            order.OrderDate = DateTime.Now;
-
-            context.Orders.Add(order);
-            context.SaveChanges();
-
-            //return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
-            return Ok(order);
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred", error = ex.Message, stackTrace = ex.StackTrace });
+            }
         }
 
-        //api/order/{id}  ------> dont start with slash '/' ya zmely  ;)
         [HttpPut("{id}")]
         public IActionResult UpdateOrder(int id, Order order)
         {
@@ -188,6 +233,8 @@ namespace GradDemo.Controllers
 
                 var oldOrder = context.Orders
                              .Include(o => o.OrderItems)
+                                .ThenInclude(oi => oi.Item)
+                                    .ThenInclude(i => i.ItemSizes)
                              .FirstOrDefault(o => o.Id == id);
 
                 if (oldOrder == null)
@@ -198,17 +245,24 @@ namespace GradDemo.Controllers
                  !context.Users.Any(u => u.Id == order.CaptainId) ||
                  !context.Users.Any(u => u.Id == order.WaiterId))
                     return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
+
                 //here if we want to pay item or more from order seperatly
                 Order newOrder = new Order() { OrderItems = new List<OrderItem>() };
 
                 foreach (var oi in order.OrderItems.Where(x => x.IsPayed))
                 {
+                    // Load item with sizes for calculation
+                    var item = context.Items
+                        .Include(i => i.ItemSizes)
+                        .FirstOrDefault(i => i.Id == oi.ItemId);
+
                     var paidItem = new OrderItem
                     {
                         ItemId = oi.ItemId,
                         Quantity = oi.Quantity,
                         SizeId = oi.SizeId,
-                        IsPayed = true
+                        IsPayed = true,
+                        Item = item
                     };
                     newOrder.OrderItems.Add(paidItem);
                 }
@@ -230,26 +284,26 @@ namespace GradDemo.Controllers
                 context.Bills.Add(newBill);
                 context.SaveChanges();
 
+                // Update old order items
+                var unpaidItems = new List<OrderItem>();
+                foreach (var oi in order.OrderItems.Where(x => !x.IsPayed))
+                {
+                    var item = context.Items
+                        .Include(i => i.ItemSizes)
+                        .FirstOrDefault(i => i.Id == oi.ItemId);
 
-                //foreach (var oi in order.OrderItems)
-                //{
-                //    var item = context.Items.Find(oi.ItemId);
-                //    if (item == null)
-                //        return BadRequest($"Item with ID {oi.ItemId} not found.");
-                //    oi.Item = item;
-                //}
-                oldOrder.OrderItems = order.OrderItems
-                                      .Where(x => !x.IsPayed)
-                                      .Select(x => new OrderItem
-                                      {
-                                          ItemId = x.ItemId,
-                                          Quantity = x.Quantity,
-                                          SizeId = x.SizeId,
-                                          IsPayed = false
-                                      }).ToList();
+                    unpaidItems.Add(new OrderItem
+                    {
+                        ItemId = oi.ItemId,
+                        Quantity = oi.Quantity,
+                        SizeId = oi.SizeId,
+                        IsPayed = false,
+                        Item = item
+                    });
+                }
 
+                oldOrder.OrderItems = unpaidItems;
                 oldOrder.CalculateTotal();
-
 
                 oldOrder.Status = order.Status;
                 oldOrder.CustomerId = order.CustomerId;
@@ -257,7 +311,6 @@ namespace GradDemo.Controllers
                 oldOrder.CaptainId = order.CaptainId;
                 oldOrder.WaiterId = order.WaiterId;
                 oldOrder.TableId = order.TableId;
-
 
                 context.SaveChanges();
                 transaction.Commit();
@@ -269,12 +322,10 @@ namespace GradDemo.Controllers
                 transaction.Rollback();
                 return StatusCode(500, $"Error: {ex.Message}");
             }
-
-
         }
 
         [HttpDelete("{id}")]
-        public IActionResult CancelOrder(int id,string reason)
+        public IActionResult CancelOrder(int id, string reason)
         {
             var order = context.Orders.Find(id);
 
@@ -284,9 +335,10 @@ namespace GradDemo.Controllers
             CancelledOrder cancelledOrder = new CancelledOrder();
             cancelledOrder.OrderId = order.Id;
             cancelledOrder.CancelledById = order.CashierId;
-            cancelledOrder.CancelledDate= DateTime.Now;
-            cancelledOrder.Reason=reason;
+            cancelledOrder.CancelledDate = DateTime.Now;
+            cancelledOrder.Reason = reason;
             context.CancelledOrders.Add(cancelledOrder);
+
             //updating cancelled order status
             order.Status = "Cancelled";
             context.Orders.Update(order);
@@ -296,14 +348,3 @@ namespace GradDemo.Controllers
         }
     }
 }
-/*  Test Object
- {
-  "status": "test",
-  "customerId": 1,
-  "cashierId": 2,
-  "orderItems": [
-    { "quantity": 4, "itemId": 1 },
-    { "quantity": 5, "itemId": 2 }
-  ]
-}
-*/
