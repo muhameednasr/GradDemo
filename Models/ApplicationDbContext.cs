@@ -18,6 +18,8 @@ namespace GradDemo.Models
         public virtual DbSet<CancelledOrder> CancelledOrders { get; set; }
         public virtual DbSet<Table> Tables { get; set; }
         public virtual DbSet<Bill> Bills { get; set; }
+        public virtual DbSet<ItemSize> ItemSize { get; set; }
+        public virtual DbSet<Size> Size { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -37,7 +37,7 @@ namespace GradDemo.Controllers
             return Ok(bill);
         }
         [HttpPost]
-        public IActionResult PlaceOrder(Bill bill)
+        public IActionResult PlaceBill(Bill bill)
         {
 
             if ( 

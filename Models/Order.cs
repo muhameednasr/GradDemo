@@ -11,7 +11,7 @@ namespace GradDemo.Models
         public int Id { get; set; }
         public DateTime OrderDate { get; set; }
         public string Status { get; set; }
-        public decimal Total { get; set; }
+        public double Total { get; set; }
 
         //refers to customer who made order
         [ForeignKey(nameof(Customer))]
@@ -39,7 +39,29 @@ namespace GradDemo.Models
 
         public void CalculateTotal()
         {
-            this.Total = this.OrderItems.Sum(oi => oi.Quantity * oi.Item.Price) ;
+            Total = 0;
+
+            if (OrderItems == null || !OrderItems.Any())
+            {
+                return;
+            }
+
+            foreach (var oi in OrderItems)
+            {
+                if (oi.Item == null)
+                {
+                    throw new InvalidOperationException($"Item not loaded for OrderItem with ItemId: {oi.ItemId}");
+                }
+
+                if (oi.Item.ItemSizes == null || !oi.Item.ItemSizes.Any())
+                {
+                    throw new InvalidOperationException($"ItemSizes not loaded for Item: {oi.Item.Name}");
+                }
+
+                var itemSize = oi.Item.ItemSizes.FirstOrDefault(its => its.SizeId == oi.SizeId);
+                double multiplier = itemSize?.Multiplier ?? 1.0;
+                Total += oi.Quantity * oi.Item.Price * multiplier;
+            }
         }
     }
 }

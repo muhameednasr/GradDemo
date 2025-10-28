@@ -1,6 +1,7 @@
 ﻿using GradDemo.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace GradDemo.Controllers
 {
@@ -35,5 +36,18 @@ namespace GradDemo.Controllers
             Item item = context.Items.FirstOrDefault(i => i.Name == name);
             return Ok(item);
         }
+
+        [HttpGet("{itemId}/sizes")]
+        public IActionResult GetAvailableSizes(int itemId)
+        {
+            var sizes = context.ItemSize
+                .Where(x => x.ItemId == itemId)
+                .Include(x => x.Size)
+                .Select(x => new { x.Size.Id, x.Size.Code })
+                .ToList();
+
+            return Ok(sizes);
+        }
+
     }
 }
