@@ -167,13 +167,13 @@ namespace GradDemo.Controllers
                     return BadRequest("Order must contain at least one item");
                 }
 
-                
+
                 if (!context.Users.Any(u => u.Id == order.CustomerId) ||
                     !context.Users.Any(u => u.Id == order.CashierId) ||
                     !context.Users.Any(u => u.Id == order.CaptainId) ||
                     !context.Users.Any(u => u.Id == order.WaiterId))
                 {
-                    return BadRequest("Invalid CustomerId or CashierId or CaptainId or WaiterId");
+                    return BadRequest(new { message = "Invalid user IDs", data = order });
                 }
 
                 // Validate and load items with their sizes
@@ -266,7 +266,7 @@ namespace GradDemo.Controllers
                     };
                     newOrder.OrderItems.Add(paidItem);
                 }
-                newOrder.Status = order.Status;
+                newOrder.Status = "Paid";
                 newOrder.CustomerId = order.CustomerId;
                 newOrder.CashierId = order.CashierId;
                 newOrder.CaptainId = order.CaptainId;
@@ -305,7 +305,7 @@ namespace GradDemo.Controllers
                 oldOrder.OrderItems = unpaidItems;
                 oldOrder.CalculateTotal();
 
-                oldOrder.Status = order.Status;
+                oldOrder.Status = "Pending";
                 oldOrder.CustomerId = order.CustomerId;
                 oldOrder.CashierId = order.CashierId;
                 oldOrder.CaptainId = order.CaptainId;
@@ -347,6 +347,20 @@ namespace GradDemo.Controllers
             context.SaveChanges();
 
             return NoContent(); // 204 
+        }
+        [HttpGet("Cancelled")]
+        public IActionResult GetCancelledOrders() {
+            var cancelledOrders = context.CancelledOrders
+                                 .Include(o=>o.Order)
+                                    .ThenInclude(oi=>oi.Waiter)
+                                 .Include(o=>o.Order)
+                                    .ThenInclude(oi=>oi.OrderItems)
+                                        .ThenInclude(i=>i.Item)
+                                 .Include(o => o.Order)
+                                    .ThenInclude(oi => oi.OrderItems)
+                                        .ThenInclude(i => i.Size)
+                                 .Include(o=>o.CancelledBy).ToList();
+            return Ok(cancelledOrders);
         }
     }
 }

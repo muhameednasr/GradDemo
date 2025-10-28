@@ -10,11 +10,11 @@ namespace GradDemo.Models
 
         [ForeignKey(nameof(Item))]
         public int ItemId { get; set; }
-        public virtual Item Item { get; set; }
+        public virtual Item? Item { get; set; }
 
         [ForeignKey(nameof(Size))]
         public int SizeId { get; set; }
-        public virtual Size Size { get; set; }
+        public virtual Size? Size { get; set; }
 
         public double Multiplier { get; set; }
     }
