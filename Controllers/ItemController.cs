@@ -19,7 +19,17 @@ namespace GradDemo.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<Item> items = context.Items.ToList();
+            var items = context.Items.Include(i => i.ItemSizes).ThenInclude(s=>s.Size).Select(i => new
+            {
+                i.Id,
+                i.Name,
+                i.Description,
+                i.Category,
+                i.Price,
+               sizes = i.ItemSizes.Select(s=> new { s.Multiplier ,s.Size.Code} ).ToList(),
+
+            }).ToList();
+            
             return Ok(items);
         }
 
@@ -43,7 +53,7 @@ namespace GradDemo.Controllers
             var sizes = context.ItemSize
                 .Where(x => x.ItemId == itemId)
                 .Include(x => x.Size)
-                .Select(x => new { x.Size.Id, x.Size.Code })
+                .Select(x => new { x.Size.Id, x.Size.Code  , x.Multiplier})
                 .ToList();
 
             return Ok(sizes);
