@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using GradDemo.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace GradDemo.Models
 {
@@ -53,9 +54,12 @@ namespace GradDemo.Models
 
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Table)
-                .WithMany() 
+                .WithMany()
                 .HasForeignKey(o => o.TableId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict); 
+                
+                
+                 modelBuilder.Seed();
         }
 
     }

@@ -1,4 +1,4 @@
-﻿using GradDemo.Models;
+using GradDemo.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,29 +17,32 @@ namespace GradDemo.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetAll()
+     [HttpGet]
+[AllowAnonymous]
+public async Task<IActionResult> GetAll()
+{
+    var items = await _context.Items
+        .Include(i => i.ItemSizes)!
+            .ThenInclude(s => s.Size)
+        .Select(i => new
         {
-            var items = await _context.Items
-                .Include(i => i.ItemSizes)!
-                    .ThenInclude(s => s.Size)
-                .Select(i => new
-                {
-                    i.Id,
-                    i.Name,
-                    i.Description,
-                    i.Category,
-                    i.Price,
-                    Sizes = i.ItemSizes
-                        .Select(s => new { s.Multiplier, SizeCode = s.Size != null ? s.Size.Code : string.Empty })
-                        .ToList()
+            i.Id,
+            i.Name,
+            i.Description,
+            i.Category,
+            i.ImageUrl,
+            i.Price,
+            Sizes = i.ItemSizes
+                .Select(s => new { 
+                    s.Multiplier, 
+                    SizeCode = s.Size != null ? s.Size.Code.ToString() : string.Empty 
                 })
-                .ToListAsync();
+                .ToList()
+        })
+        .ToListAsync();
 
-            return Ok(items);
-        }
-
+    return Ok(items);
+}
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
