@@ -1,5 +1,6 @@
-﻿using GradDemo.Models;
-using Microsoft.AspNetCore.Http;
+﻿using GradDemo.DTOs.Bills;
+using GradDemo.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,50 +8,101 @@ namespace GradDemo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Policy = "RequireCashierRole")]
     public class BillController : ControllerBase
     {
+        private readonly ApplicationDbContext _context;
 
-        ApplicationDbContext context;
-        public BillController(ApplicationDbContext _context)
+        public BillController(ApplicationDbContext context)
         {
-            context = _context;
+            _context = context;
         }
+
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<ActionResult<IEnumerable<BillResponseDto>>> GetAll()
         {
-            var bill = context.Bills.Include(b => b.Order).Include(b => b.Cashier).Select(
-                b=> new
+            var bills = await _context.Bills
+                .Include(b => b.Order)!
+                    .ThenInclude(o => o!.OrderItems)!
+                        .ThenInclude(oi => oi.Item)
+                .Include(b => b.Cashier)
+                .Select(b => new BillResponseDto
                 {
-                    b.Id,
-                    b.BillDate,
-                    b.PaymentMethod,
-                    b.Cashier.Name,
-                    Items = b.Order.OrderItems.Select(oi => new
-                    {
-                        oi.Item.Name,
-                        oi.Quantity,
-                        oi.Item.Price
-                    }).ToList()
-                }
-            );
-                
-            return Ok(bill);
+                    Id = b.Id,
+                    BillDate = b.BillDate,
+                    PaymentMethod = b.PaymentMethod,
+                    CashierName = b.Cashier != null ? b.Cashier.Name : string.Empty,
+                    OrderId = b.OrderId,
+                    Items = b.Order != null
+                        ? b.Order.OrderItems.Select(oi => new BillItemDto
+                        {
+                            ItemName = oi.Item != null ? oi.Item.Name : string.Empty,
+                            Quantity = oi.Quantity,
+                            Price = oi.Item != null ? oi.Item.Price : 0
+                        }).ToList()
+                        : new List<BillItemDto>()
+                })
+                .ToListAsync();
+
+            return Ok(bills);
         }
+
         [HttpPost]
-        public IActionResult PlaceBill(Bill bill)
+        public async Task<ActionResult<BillResponseDto>> PlaceBill([FromBody] CreateBillRequestDto request)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-            if ( 
-                !context.Users.Any(u => u.Id == bill.CashierId) ||    
-                !context.Orders.Any(u => u.Id == bill.OrderId))
-                return BadRequest("Invalid  CashierId or OrderId");
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)!
+                    .ThenInclude(oi => oi.Item)
+                .FirstOrDefaultAsync(o => o.Id == request.OrderId);
 
-           
-            context.Bills.Add(bill);
-            context.SaveChanges();
+            if (order == null)
+            {
+                return BadRequest("Invalid OrderId");
+            }
 
-            //return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
-            return Ok(bill);
+            var cashierExists = await _context.Users.AnyAsync(u => u.Id == request.CashierId);
+            if (!cashierExists)
+            {
+                return BadRequest("Invalid CashierId");
+            }
+
+            var bill = new Bill
+            {
+                OrderId = request.OrderId,
+                CashierId = request.CashierId,
+                PaymentMethod = request.PaymentMethod,
+                BillDate = DateTime.UtcNow
+            };
+
+            _context.Bills.Add(bill);
+            await _context.SaveChangesAsync();
+
+            var response = new BillResponseDto
+            {
+                Id = bill.Id,
+                BillDate = bill.BillDate,
+                PaymentMethod = bill.PaymentMethod,
+                CashierName = await _context.Users
+                    .Where(u => u.Id == bill.CashierId)
+                    .Select(u => u.Name)
+                    .FirstOrDefaultAsync() ?? string.Empty,
+                OrderId = order.Id,
+                Items = order.OrderItems
+                    .Select(oi => new BillItemDto
+                    {
+                        ItemName = oi.Item != null ? oi.Item.Name : string.Empty,
+                        Quantity = oi.Quantity,
+                        Price = oi.Item != null ? oi.Item.Price : 0
+                    })
+                    .ToList()
+            };
+
+            return CreatedAtAction(nameof(GetAll), new { id = bill.Id }, response);
         }
     }
 }

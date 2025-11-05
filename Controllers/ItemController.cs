@@ -1,5 +1,5 @@
-﻿using GradDemo.Models;
-using Microsoft.AspNetCore.Http;
+using GradDemo.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,57 +7,84 @@ namespace GradDemo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ItemController : ControllerBase
     {
+        private readonly ApplicationDbContext _context;
 
-        ApplicationDbContext context;
-        public ItemController(ApplicationDbContext _context)
+        public ItemController(ApplicationDbContext context)
         {
-            context = _context;
+            _context = context;
         }
 
-        [HttpGet]
-        public IActionResult GetAll()
+     [HttpGet]
+[AllowAnonymous]
+public async Task<IActionResult> GetAll()
+{
+    var items = await _context.Items
+        .Include(i => i.ItemSizes)!
+            .ThenInclude(s => s.Size)
+        .Select(i => new
         {
-            var items = context.Items.Include(i => i.ItemSizes).ThenInclude(s=>s.Size).Select(i => new
+            i.Id,
+            i.Name,
+            i.Description,
+            i.Category,
+            i.ImageUrl,
+            i.Price,
+            Sizes = i.ItemSizes
+                .Select(s => new { 
+                    s.Multiplier, 
+                    SizeCode = s.Size != null ? s.Size.Code.ToString() : string.Empty 
+                })
+                .ToList()
+        })
+        .ToListAsync();
+
+    return Ok(items);
+}
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var item = await _context.Items
+                .Include(i => i.ItemSizes)!
+                    .ThenInclude(s => s.Size)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (item == null)
             {
-                i.Id,
-                i.Name,
-                i.Description,
-                i.Category,
-                i.Price,
-               sizes = i.ItemSizes.Select(s=> new { s.Multiplier ,s.Size.Code} ).ToList(),
+                return NotFound();
+            }
 
-            }).ToList();
-            
-            return Ok(items);
-        }
-
-        [HttpGet]
-        [Route("{id:int}")] //api/order/1
-        public IActionResult GetById(int id)
-        {
-            Item item = context.Items.FirstOrDefault(i => i.Id == id);
             return Ok(item);
         }
-        [HttpGet("{name:alpha}")]
-        public IActionResult GetByName(string name)
+
+        [HttpGet("by-name/{name}")]
+        public async Task<IActionResult> GetByName(string name)
         {
-            Item item = context.Items.FirstOrDefault(i => i.Name == name);
+            var item = await _context.Items
+                .Include(i => i.ItemSizes)!
+                    .ThenInclude(s => s.Size)
+                .FirstOrDefaultAsync(i => i.Name == name);
+
+            if (item == null)
+            {
+                return NotFound();
+            }
+
             return Ok(item);
         }
 
         [HttpGet("{itemId}/sizes")]
-        public IActionResult GetAvailableSizes(int itemId)
+        public async Task<IActionResult> GetAvailableSizes(int itemId)
         {
-            var sizes = context.ItemSize
+            var sizes = await _context.ItemSize
                 .Where(x => x.ItemId == itemId)
                 .Include(x => x.Size)
-                .Select(x => new { x.Size.Id, x.Size.Code  , x.Multiplier})
-                .ToList();
+                .Select(x => new { x.Size!.Id, x.Size.Code, x.Multiplier })
+                .ToListAsync();
 
             return Ok(sizes);
         }
-
     }
 }

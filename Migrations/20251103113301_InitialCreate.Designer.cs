@@ -4,6 +4,7 @@ using GradDemo.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GradDemo.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251103113301_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1054,7 +1057,7 @@ namespace GradDemo.Migrations
                             Id = 1,
                             Email = "manager@mochacafe.com",
                             Name = "Cafe Manager",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000001",
                             RoleId = 1
                         },
@@ -1063,7 +1066,7 @@ namespace GradDemo.Migrations
                             Id = 2,
                             Email = "ahmed.cashier@mochacafe.com",
                             Name = "Ahmed Cashier",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000002",
                             RoleId = 2
                         },
@@ -1072,7 +1075,7 @@ namespace GradDemo.Migrations
                             Id = 3,
                             Email = "mona.cashier@mochacafe.com",
                             Name = "Mona Cashier",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000003",
                             RoleId = 2
                         },
@@ -1081,7 +1084,7 @@ namespace GradDemo.Migrations
                             Id = 4,
                             Email = "samir.captain@mochacafe.com",
                             Name = "Captain Samir",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000004",
                             RoleId = 3
                         },
@@ -1090,7 +1093,7 @@ namespace GradDemo.Migrations
                             Id = 5,
                             Email = "rania.captain@mochacafe.com",
                             Name = "Captain Rania",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000005",
                             RoleId = 3
                         },
@@ -1099,7 +1102,7 @@ namespace GradDemo.Migrations
                             Id = 6,
                             Email = "tarek.barista@mochacafe.com",
                             Name = "Barista Tarek",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000006",
                             RoleId = 4
                         },
@@ -1108,7 +1111,7 @@ namespace GradDemo.Migrations
                             Id = 7,
                             Email = "nadia.barista@mochacafe.com",
                             Name = "Barista Nadia",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000007",
                             RoleId = 4
                         },
@@ -1117,7 +1120,7 @@ namespace GradDemo.Migrations
                             Id = 8,
                             Email = "karim.barista@mochacafe.com",
                             Name = "Barista Karim",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000008",
                             RoleId = 4
                         },
@@ -1126,7 +1129,7 @@ namespace GradDemo.Migrations
                             Id = 9,
                             Email = "ali.customer@email.com",
                             Name = "Regular Customer Ali",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000009",
                             RoleId = 5
                         },
@@ -1135,7 +1138,7 @@ namespace GradDemo.Migrations
                             Id = 10,
                             Email = "sara.customer@email.com",
                             Name = "Customer Sara",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000010",
                             RoleId = 5
                         },
@@ -1144,7 +1147,7 @@ namespace GradDemo.Migrations
                             Id = 11,
                             Email = "omar.customer@email.com",
                             Name = "Customer Omar",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEdWWKzOyYcpm02EZvXQvtSWGoNo/kFwiYgsJZL5APdqOcx/6ZGytrFrgyb88l0mzA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEHzl2JdIehlV5sHj9vJqIqFQ7y8R8Z5sT6pKq9r8x1Xa2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
                             Phone = "+201000000011",
                             RoleId = 5
                         });
